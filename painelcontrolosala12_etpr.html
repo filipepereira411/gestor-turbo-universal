@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grelha de Pesca ETPR - Monitorização</title>
+    <style>
+        :root {
+            --bg-main: #0f0f12;
+            --bg-card: #16161a;
+            --accent: #007bff;
+            --text-main: #ffffff;
+            --text-muted: #9a9a9f;
+            --online: #22c55e;
+            --offline: #ef4444;
+            --testing: #eab308;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .contentor-restrito {
+            width: 100%;
+            max-width: 480px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .header-simples {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        h1 { margin: 0 0 5px 0; font-size: 20px; font-weight: 800; color: var(--text-main); }
+        .sub { font-size: 13px; color: var(--text-muted); font-family: monospace; }
+
+        /* Estilo Exato da Imagem */
+        .card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 24px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            border-left: 5px solid var(--testing);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+            transition: border-color 0.3s;
+        }
+        .card.online { border-left-color: var(--online); }
+        .card.offline { border-left-color: var(--offline); }
+        .card.testing { border-left-color: var(--testing); }
+
+        .info-txt h3 { margin: 0 0 6px 0; font-size: 20px; font-weight: 700; letter-spacing: 0.5px; }
+        .info-txt .ip { font-family: monospace; font-size: 16px; color: var(--text-muted); font-weight: 500; margin-bottom: 8px; }
+        .info-txt .tipo { font-size: 11px; color: var(--text-muted); font-weight: bold; text-transform: uppercase; background: #202026; padding: 4px 8px; border-radius: 4px; display: inline-block; }
+
+        .botoes-card { display: flex; gap: 12px; }
+        .btn-link { text-decoration: none; text-align: center; background: var(--accent); color: white; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: bold; flex: 1; transition: opacity 0.2s; }
+        .btn-link:hover { opacity: 0.9; }
+        .btn-remover-fake { background: transparent; color: var(--offline); border: 1px solid #3e1f24; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 500; flex: 1; text-align: center; cursor: not-allowed; }
+
+        .indicador-ponto {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--testing);
+        }
+        .online .indicador-ponto { background: var(--online); box-shadow: 0 0 10px var(--online); }
+        .offline .indicador-ponto { background: var(--offline); }
+        .testing .indicador-ponto { background: var(--testing); }
+    </style>
+</head>
+<body>
+
+<div class="contentor-restrito">
+    
+    <div class="header-simples">
+        <h1>🎣 Controlo de Periféricos</h1>
+        <div class="sub">Alvo: 192.168.0.1 & 192.168.0.10</div>
+    </div>
+
+    <!-- CARD 1: PC 10 S12 ETPR -->
+    <div class="card testing" id="node-pc">
+        <div class="indicador-ponto"></div>
+        <div class="info-txt">
+            <h3>PC 10 S12 ETPR</h3>
+            <div class="ip">192.168.0.10</div>
+            <div class="tipo">🖥️ COMPUTADOR</div>
+        </div>
+        <div class="botoes-card">
+            <a href="http://192.168.0.10" target="_blank" class="btn-link">Controlar (Abrir)</a>
+            <div class="btn-remover-fake">Remover</div>
+        </div>
+    </div>
+
+    <!-- CARD 2: S12 ETPR (TP-Link) -->
+    <div class="card testing" id="node-router">
+        <div class="indicador-ponto"></div>
+        <div class="info-txt">
+            <h3>S12 ETPR (TP - Link)</h3>
+            <div class="ip">192.168.0.1</div>
+            <div class="tipo">🌐 ROUTER / GATEWAY</div>
+        </div>
+        <div class="botoes-card">
+            <a href="http://192.168.0.1" target="_blank" class="btn-link">Controlar (Abrir)</a>
+            <div class="btn-remover-fake">Remover</div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+// Motor de verificação direta para os dois IPs fixos
+function testarIP(ip, elementId) {
+    const cardNode = document.getElementById(elementId);
+    const redeImg = new Image();
+    const tZero = Date.now();
+
+    redeImg.onload = function() { MudarEstadoUI(cardNode, "online"); };
+    redeImg.onerror = function() {
+        const tempoResposta = Date.now() - tZero;
+        if (tempoResposta < 1200) {
+            MudarEstadoUI(cardNode, "online");
+        } else {
+            MudarEstadoUI(cardNode, "offline");
+        }
+    };
+
+    // Tenta carregar o ícone de sistema padrão de cada aparelho
+    redeImg.src = `http://${ip}/favicon.ico?cache=${tZero}`;
+}
+
+function MudarEstadoUI(elemento, classe) {
+    if(elemento) elemento.className = `card ${classe}`;
+}
+
+function atualizarTodos() {
+    testarIP("192.168.0.10", "node-pc");
+    testarIP("192.168.0.1", "node-router");
+}
+
+// Inicia o ping em background imediatamente e repete de 5 em 5 segundos
+atualizarTodos();
+setInterval(atualizarTodos, 5000);
+</script>
+
+</body>
+</html>
