@@ -1,0 +1,1 @@
+Gere qualquer rede.
