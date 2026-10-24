@@ -3,276 +3,246 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Grelha de Pesca - Gestor de Periféricos</title>
+    <title>Painel Unificado - Controlo Total de Periféricos</title>
     <style>
         :root {
-            --primary: #007bff;
-            --success: #28a745;
-            --danger: #dc3545;
-            --warning: #ffc107;
-            --dark: #343a40;
-            --light: #f8f9fa;
+            --bg-main: #0b0f19;
+            --bg-card: #151f32;
+            --accent: #38bdf8;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --online: #22c55e;
+            --offline: #ef4444;
+            --testing: #eab308;
         }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #e9ecef;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
             margin: 0;
             padding: 20px;
-            color: #333;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            box-sizing: border-box;
         }
-        .header {
-            background: var(--dark);
-            color: white;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
+
+        header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        .header h1 { margin: 0; font-size: 24px; }
-        .controls {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
+            border-bottom: 1px solid #24324d;
+            padding-bottom: 15px;
             margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        h1 { margin: 0; font-size: 24px; color: var(--accent); font-weight: 800; }
+        
+        .gama-badge {
+            background: #24324d;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-family: monospace;
+        }
+
+        /* 1. Zona de Redirecionamento Inicial */
+        #zona-atalho-rapido {
+            background: #1e293b;
+            border: 1px solid #334155;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
             display: flex;
-            gap: 15px;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .timer-alerta { font-size: 14px; display: flex; align-items: center; gap: 10px; }
+        .spinner-mini {
+            border: 3px solid rgba(255,255,255,0.1);
+            width: 16px; height: 16px; border-radius: 50%;
+            border-left-color: var(--accent);
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* 2. Formulário de Configuração */
+        .painel-config {
+            background: var(--bg-card);
+            border: 1px solid #24324d;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 12px;
             flex-wrap: wrap;
             align-items: flex-end;
         }
-        .form-group {
+
+        .campo { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 180px; }
+        .campo label { font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-muted); }
+        
+        input, select, button {
+            background: #0b0f19; border: 1px solid #475569; color: var(--text-main);
+            padding: 10px; border-radius: 6px; font-size: 13px; outline: none;
+        }
+        input:focus, select:focus { border-color: var(--accent); }
+
+        button { cursor: pointer; font-weight: 700; background: var(--accent); color: #0b0f19; border: none; }
+        button:hover { opacity: 0.9; }
+        .btn-varrer { background: transparent; border: 1px solid var(--online); color: var(--online); }
+        .btn-varrer:hover { background: var(--online); color: #0b0f19; }
+
+        /* 3. Área de Trabalho Dividida (Grelha de Pings vs Ecrãs em Direto) */
+        .area-trabalho {
+            display: flex;
+            gap: 20px;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .coluna-esquerda {
+            flex: 1;
+            overflow-y: auto;
             display: flex;
             flex-direction: column;
-            gap: 5px;
+            gap: 15px;
+            padding-right: 5px;
         }
-        label { font-weight: bold; font-size: 14px; color: #555; }
-        input, select, button {
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-        button {
-            background: var(--primary);
-            color: white;
-            border: none;
-            cursor: pointer;
-            font-weight: bold;
-            transition: background 0.2s;
-        }
-        button:hover { background: #0056b3; }
-        .btn-scan { background: var(--success); }
-        .btn-scan:hover { background: #218838; }
 
-        /* A Grelha de Pesca (Grid) */
-        .grelha-dispositivos {
+        .coluna-direita-ecras {
+            flex: 1.5;
+            overflow-y: auto;
+            background: #070a12;
+            border: 1px solid #24324d;
+            border-radius: 12px;
+            padding: 15px;
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+            align-content: start;
         }
-        .card-dispositivo {
-            background: white;
+
+        /* Elementos da Grelha/Cards */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid #24324d;
             border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            border-left: 5px solid #ccc;
+            padding: 15px;
             position: relative;
-            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-        .card-dispositivo:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
-        }
-        .card-dispositivo.online { border-left-color: var(--success); }
-        .card-dispositivo.offline { border-left-color: var(--danger); }
-        .card-dispositivo.testing { border-left-color: var(--warning); }
+        .card.online { border-left: 4px solid var(--online); }
+        .card.offline { border-left: 4px solid var(--offline); }
+        .card.testing { border-left: 4px solid var(--testing); }
 
-        .status-badge {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #ccc;
-        }
-        .online .status-badge { background: var(--success); animation: pulse 2s infinite; }
-        .offline .status-badge { background: var(--danger); }
-        .testing .status-badge { background: var(--warning); }
+        .info-txt h3 { margin: 0 0 4px 0; font-size: 15px; }
+        .info-txt .ip { font-family: monospace; font-size: 13px; color: var(--accent); font-weight: bold; }
+        .info-txt .tipo { font-size: 11px; color: var(--text-muted); }
 
-        @keyframes pulse {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(40, 167, 69, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
-        }
+        .botoes-card { display: flex; gap: 8px; }
+        .btn-link { text-decoration: none; background: #24324d; color: var(--text-main); padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .btn-link:hover { background: var(--accent); color: #0b0f19; }
+        .btn-apagar { background: transparent; color: var(--offline); border: 1px solid var(--offline); padding: 5px 10px; border-radius: 4px; font-size: 11px; }
 
-        .device-info h3 { margin: 0 0 5px 0; color: var(--dark); }
-        .device-ip { font-family: 'Courier New', Courier, monospace; font-weight: bold; color: #666; }
-        .device-type { font-size: 12px; text-transform: uppercase; background: #eee; padding: 2px 6px; border-radius: 3px; display: inline-block; margin-bottom: 15px; }
-        
-        .actions { display: flex; gap: 10px; }
-        .btn-action { flex: 1; text-align: center; text-decoration: none; padding: 8px; font-size: 13px; border-radius: 4px; font-weight: bold; }
-        .btn-connect { background: var(--primary); color: white; }
-        .btn-connect:hover { background: #0056b3; }
-        .btn-remove { background: #f8f9fa; color: var(--danger); border: 1px solid #dc3545; }
-        .btn-remove:hover { background: #f8d7da; }
+        /* Módulos do Monitor de Ecrã (Direto) */
+        .box-ecra {
+            background: var(--bg-card);
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .box-ecra-header { display: flex; justify-content: space-between; font-size: 12px; font-weight: bold; }
+        .frame-imagem {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: #000;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid #24324d;
+        }
+        .frame-imagem img { width: 100%; height: 100%; object-fit: contain; }
+        .tag-live { position: absolute; top: 6px; left: 6px; background: var(--offline); color: white; padding: 2px 5px; font-size: 9px; font-weight: bold; border-radius: 3px; }
     </style>
 </head>
 <body>
 
-<div class="header">
-    <h1>🎣 Grelha de Pesca - Gestor de Periféricos</h1>
-    <div id="net-info">Gama Alvo: 192.168.1.X</div>
-</div>
+    <header>
+        <h1>🎣 Grelha de Pesca - Controlo Unificado de Periféricos</h1>
+        <div class="gama-badge">Sub-redes: 192.168.0.X / 192.168.1.X</div>
+    </header>
 
-<!-- Adicionar Novo Periférico à Grelha -->
-<div class="controls">
-    <div class="form-group">
-        <label for="newIP">Endereço IP</label>
-        <input type="text" id="newIP" placeholder="Ex: 192.168.1.68" value="192.168.1.68">
+    <!-- 1. Módulo de Redirecionamento Automático Inicial -->
+    <div id="zona-atalho-rapido">
+        <div class="timer-alerta">
+            <div class="spinner-mini"></div>
+            <span>A redirecionar em segurança para o IP padrão em <strong id="contagem">3</strong>s...</span>
+        </div>
+        <div>
+            <select id="atalhoIP" onchange="cancelarERedirecionar(this.value)" style="background:#151f32; padding:5px;">
+                <option value="">-- Mudar Salto Rápido --</option>
+                <option value="192.168.1.88">192.168.1.88 (JCPereira)</option>
+                <option value="192.168.0.1">192.168.0.1 (ETPR-SINF)</option>
+                <option value="192.168.1.254">192.168.1.254 (Router)</option>
+            </select>
+            <button onclick="pararRedirecionamento()" style="padding: 6px 12px; background:var(--offline); color:white; font-size:12px;">Parar Salto</button>
+        </div>
     </div>
-    <div class="form-group">
-        <label for="newName">Nome do Dispositivo</label>
-        <input type="text" id="newName" placeholder="Ex: Impressão Sala / PC Principal">
+
+    <!-- 2. Formulário do Gestor de Inventário -->
+    <div class="painel-config">
+        <div class="campo">
+            <label for="ipAlvo">Endereço IP</label>
+            <input type="text" id="ipAlvo" value="192.168.1.88">
+        </div>
+        <div class="campo">
+            <label for="nomeAlvo">Nome do Dispositivo</label>
+            <input type="text" id="nomeAlvo" placeholder="Ex: PC Aluno 10">
+        </div>
+        <div class="campo">
+            <label for="tipoAlvo">Classe</label>
+            <select id="tipoAlvo">
+                <option value="🖥️ Computador">🖥️ Computador</option>
+                <option value="🖨️ Impressora">🖨️ Impressora</option>
+                <option value="🌐 Gateway / Router">🌐 Router</option>
+                <option value="📷 Câmara IP">📷 Câmara IP</option>
+            </select>
+        </div>
+        <button onclick="adicionarAInventario()">Inserir Dispositivo</button>
+        <button class="btn-varrer" onclick="varrerPingsRede()">Atualizar Estado (Ping)</button>
     </div>
-    <div class="form-group">
-        <label for="newType">Tipo de Periférico</label>
-        <select id="newType">
-            <option value="🖥️ Computador">Computador</option>
-            <option value="🖨️ Impressora">Impressora</option>
-            <option value="🌐 Router / Gateway">Router / Gateway</option>
-            <option value="📷 Câmara IP">Câmara IP</option>
-            <option value="🗄️ Servidor / NAS">Servidor / NAS</option>
-            <option value="📱 Smartphone / IoT">Smartphone / IoT</option>
-        </select>
-    </div>
-    <button onclick="adicionarDispositivo()">Lançar na Grelha</button>
-    <button class="btn-scan" onclick="testarTodos()">Varrer Rede (Ping)</button>
-</div>
 
-<!-- Contentor dos Cards -->
-<div class="grelha-dispositivos" id="gridContador">
-    <!-- Os dispositivos gerados dinamicamente entram aqui -->
-</div>
+    <!-- 3. Interface de Monitorização Dividida -->
+    <div class="area-trabalho">
+        
+        <!-- Esquerda: Grelha Ativa de Dispositivos (Pings) -->
+        <div class="coluna-esquerda" id="contentorGrelha">
+            <!-- Injetado dinamicamente via Javascript -->
+        </div>
 
-<script>
-// Banco de dados em memória local (Persiste no browser do computador atual)
-let dispositivos = JSON.parse(localStorage.getItem('grelha_perifericos')) || [
-    { id: 1, ip: "192.168.1.254", nome: "Router Principal (MEO/Voda)", tipo: "🌐 Router / Gateway", status: "offline" },
-    { id: 2, ip: "192.168.1.68", nome: "Periférico Padrão", tipo: "🖥️ Computador", status: "offline" }
-];
-
-function salvarDados() {
-    localStorage.setItem('grelha_perifericos', JSON.stringify(dispositivos));
-}
-
-function renderizarGrelha() {
-    const grid = document.getElementById('gridContador');
-    grid.innerHTML = '';
-
-    dispositivos.forEach(dev => {
-        grid.innerHTML += `
-            <div class="card-dispositivo ${dev.status}" id="dev-${dev.id}">
-                <div class="status-badge"></div>
-                <div class="device-info">
-                    <h3>${dev.nome}</h3>
-                    <div class="device-ip">${dev.ip}</div>
-                    <div class="device-type">${dev.tipo}</div>
+        <!-- Direita: Transmissão de Ecrãs Ativa (Imagens dos Scripts) -->
+        <div class="coluna-direita-ecras">
+            
+            <!-- Monitor ETPR-SINF12-10 -->
+            <div class="box-ecra">
+                <div class="box-ecra-header">
+                    <span style="color:var(--accent)">🖥️ ETPR-SINF12-10</span>
+                    <span>📍 IP: 192.168.0.1</span>
                 </div>
-                <div class="actions">
-                    <a href="http://${dev.ip}" target="_blank" class="btn-action btn-connect">Controlar (Abrir)</a>
-                    <button onclick="removerDispositivo(${dev.id})" class="btn-action btn-remove">Remover</button>
+                <div class="frame-imagem">
+                    <div class="tag-live">DIRETO</div>
+                    <img id="img-sinf" src="ETPR-SINF12-10.jpg" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://w3.org\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%2324324d\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z\'/></svg>'">
                 </div>
             </div>
-        `;
-    });
-}
 
-function adicionarDispositivo() {
-    const ip = document.getElementById('newIP').value.trim();
-    const nome = document.getElementById('newName').value.trim() || "Dispositivo Novo";
-    const tipo = document.getElementById('newType').value;
-
-    if(!ip) return alert("Insira um IP válido!");
-
-    const novo = {
-        id: Date.now(),
-        ip: ip,
-        nome: nome,
-        tipo: tipo,
-        status: "offline"
-    };
-
-    dispositivos.push(novo);
-    salvarDados();
-    renderizarGrelha();
-    testarDispositivo(novo);
-}
-
-function removerDispositivo(id) {
-    dispositivos = dispositivos.filter(d => d.id !== id);
-    salvarDados();
-    renderizarGrelha();
-}
-
-// O mecanismo de "Pesca": Testa se o IP está ativo na rede local
-function testarDispositivo(dev) {
-    const card = document.getElementById(`dev-${dev.id}`);
-    if(card) {
-        card.className = "card-dispositivo testing";
-    }
-
-    // Técnica de Ping usando carregamento de imagem fantasma (contorna bloqueios de CORS do browser)
-    const img = new Image();
-    const startTime = new Date().getTime();
-    
-    img.onload = function() {
-        atualizarStatus(dev.id, "online");
-    };
-    
-    img.onerror = function() {
-        // Se falhar mas demorar algum tempo, significa que o IP existe mas rejeitou a imagem (está Online)
-        const duration = new Date().getTime() - startTime;
-        if (duration < 1500) {
-            atualizarStatus(dev.id, "online");
-        } else {
-            atualizarStatus(dev.id, "offline");
-        }
-    };
-
-    // Tenta carregar uma porta web padrão do dispositivo
-    img.src = "http://" + dev.ip + "/favicon.ico?t=" + startTime;
-    
-    // Timeout de segurança após 2.5 segundos
-    setTimeout(() => {
-        if(dev.status === "testing") {
-            atualizarStatus(dev.id, "offline");
-        }
-    }, 2500);
-}
-
-function atualizarStatus(id, status) {
-    const dev = dispositivos.find(d => d.id === id);
-    if(dev) {
-        dev.status = status;
-        const card = document.getElementById(`dev-${id}`);
-        if(card) card.className = `card-dispositivo ${status}`;
-    }
-}
-
-function testarTodos() {
-    dispositivos.forEach(dev => testarDispositivo(dev));
-}
-
-// Inicialização automática
-renderizarGrelha();
-// Vare a rede 2 segundos após abrir para dar feedback visual
-setTimeout(testarTodos, 1000);
-</script>
-
-</body>
-    </html>
-    
+            <!-- Monitor DESKTOP-FSK7C12 -->
+            <div class="box-ecra">
+                <div class="box-ecra-header">
