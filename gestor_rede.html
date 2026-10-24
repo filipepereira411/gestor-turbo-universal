@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grelha de Pesca - Gestor de Periféricos</title>
+    <style>
+        :root {
+            --primary: #007bff;
+            --success: #28a745;
+            --danger: #dc3545;
+            --warning: #ffc107;
+            --dark: #343a40;
+            --light: #f8f9fa;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #e9ecef;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .header {
+            background: var(--dark);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .header h1 { margin: 0; font-size: 24px; }
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        label { font-weight: bold; font-size: 14px; color: #555; }
+        input, select, button {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        button:hover { background: #0056b3; }
+        .btn-scan { background: var(--success); }
+        .btn-scan:hover { background: #218838; }
+
+        /* A Grelha de Pesca (Grid) */
+        .grelha-dispositivos {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        .card-dispositivo {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border-left: 5px solid #ccc;
+            position: relative;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .card-dispositivo:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+        }
+        .card-dispositivo.online { border-left-color: var(--success); }
+        .card-dispositivo.offline { border-left-color: var(--danger); }
+        .card-dispositivo.testing { border-left-color: var(--warning); }
+
+        .status-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ccc;
+        }
+        .online .status-badge { background: var(--success); animation: pulse 2s infinite; }
+        .offline .status-badge { background: var(--danger); }
+        .testing .status-badge { background: var(--warning); }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(40, 167, 69, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
+        }
+
+        .device-info h3 { margin: 0 0 5px 0; color: var(--dark); }
+        .device-ip { font-family: 'Courier New', Courier, monospace; font-weight: bold; color: #666; }
+        .device-type { font-size: 12px; text-transform: uppercase; background: #eee; padding: 2px 6px; border-radius: 3px; display: inline-block; margin-bottom: 15px; }
+        
+        .actions { display: flex; gap: 10px; }
+        .btn-action { flex: 1; text-align: center; text-decoration: none; padding: 8px; font-size: 13px; border-radius: 4px; font-weight: bold; }
+        .btn-connect { background: var(--primary); color: white; }
+        .btn-connect:hover { background: #0056b3; }
+        .btn-remove { background: #f8f9fa; color: var(--danger); border: 1px solid #dc3545; }
+        .btn-remove:hover { background: #f8d7da; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>🎣 Grelha de Pesca - Gestor de Periféricos</h1>
+    <div id="net-info">Gama Alvo: 192.168.1.X</div>
+</div>
+
+<!-- Adicionar Novo Periférico à Grelha -->
+<div class="controls">
+    <div class="form-group">
+        <label for="newIP">Endereço IP</label>
+        <input type="text" id="newIP" placeholder="Ex: 192.168.1.68" value="192.168.1.68">
+    </div>
+    <div class="form-group">
+        <label for="newName">Nome do Dispositivo</label>
+        <input type="text" id="newName" placeholder="Ex: Impressão Sala / PC Principal">
+    </div>
+    <div class="form-group">
+        <label for="newType">Tipo de Periférico</label>
+        <select id="newType">
+            <option value="🖥️ Computador">Computador</option>
+            <option value="🖨️ Impressora">Impressora</option>
+            <option value="🌐 Router / Gateway">Router / Gateway</option>
+            <option value="📷 Câmara IP">Câmara IP</option>
+            <option value="🗄️ Servidor / NAS">Servidor / NAS</option>
+            <option value="📱 Smartphone / IoT">Smartphone / IoT</option>
+        </select>
+    </div>
+    <button onclick="adicionarDispositivo()">Lançar na Grelha</button>
+    <button class="btn-scan" onclick="testarTodos()">Varrer Rede (Ping)</button>
+</div>
+
+<!-- Contentor dos Cards -->
+<div class="grelha-dispositivos" id="gridContador">
+    <!-- Os dispositivos gerados dinamicamente entram aqui -->
+</div>
+
+<script>
+// Banco de dados em memória local (Persiste no browser do computador atual)
+let dispositivos = JSON.parse(localStorage.getItem('grelha_perifericos')) || [
+    { id: 1, ip: "192.168.1.254", nome: "Router Principal (MEO/Voda)", tipo: "🌐 Router / Gateway", status: "offline" },
+    { id: 2, ip: "192.168.1.68", nome: "Periférico Padrão", tipo: "🖥️ Computador", status: "offline" }
+];
+
+function salvarDados() {
+    localStorage.setItem('grelha_perifericos', JSON.stringify(dispositivos));
+}
+
+function renderizarGrelha() {
+    const grid = document.getElementById('gridContador');
+    grid.innerHTML = '';
+
+    dispositivos.forEach(dev => {
+        grid.innerHTML += `
+            <div class="card-dispositivo ${dev.status}" id="dev-${dev.id}">
+                <div class="status-badge"></div>
+                <div class="device-info">
+                    <h3>${dev.nome}</h3>
+                    <div class="device-ip">${dev.ip}</div>
+                    <div class="device-type">${dev.tipo}</div>
+                </div>
+                <div class="actions">
+                    <a href="http://${dev.ip}" target="_blank" class="btn-action btn-connect">Controlar (Abrir)</a>
+                    <button onclick="removerDispositivo(${dev.id})" class="btn-action btn-remove">Remover</button>
+                </div>
+            </div>
+        `;
+    });
+}
+
+function adicionarDispositivo() {
+    const ip = document.getElementById('newIP').value.trim();
+    const nome = document.getElementById('newName').value.trim() || "Dispositivo Novo";
+    const tipo = document.getElementById('newType').value;
+
+    if(!ip) return alert("Insira um IP válido!");
+
+    const novo = {
+        id: Date.now(),
+        ip: ip,
+        nome: nome,
+        tipo: tipo,
+        status: "offline"
+    };
+
+    dispositivos.push(novo);
+    salvarDados();
+    renderizarGrelha();
+    testarDispositivo(novo);
+}
+
+function removerDispositivo(id) {
+    dispositivos = dispositivos.filter(d => d.id !== id);
+    salvarDados();
+    renderizarGrelha();
+}
+
+// O mecanismo de "Pesca": Testa se o IP está ativo na rede local
+function testarDispositivo(dev) {
+    const card = document.getElementById(`dev-${dev.id}`);
+    if(card) {
+        card.className = "card-dispositivo testing";
+    }
+
+    // Técnica de Ping usando carregamento de imagem fantasma (contorna bloqueios de CORS do browser)
+    const img = new Image();
+    const startTime = new Date().getTime();
+    
+    img.onload = function() {
+        atualizarStatus(dev.id, "online");
+    };
+    
+    img.onerror = function() {
+        // Se falhar mas demorar algum tempo, significa que o IP existe mas rejeitou a imagem (está Online)
+        const duration = new Date().getTime() - startTime;
+        if (duration < 1500) {
+            atualizarStatus(dev.id, "online");
+        } else {
+            atualizarStatus(dev.id, "offline");
+        }
+    };
+
+    // Tenta carregar uma porta web padrão do dispositivo
+    img.src = "http://" + dev.ip + "/favicon.ico?t=" + startTime;
+    
+    // Timeout de segurança após 2.5 segundos
+    setTimeout(() => {
+        if(dev.status === "testing") {
+            atualizarStatus(dev.id, "offline");
+        }
+    }, 2500);
+}
+
+function atualizarStatus(id, status) {
+    const dev = dispositivos.find(d => d.id === id);
+    if(dev) {
+        dev.status = status;
+        const card = document.getElementById(`dev-${id}`);
+        if(card) card.className = `card-dispositivo ${status}`;
+    }
+}
+
+function testarTodos() {
+    dispositivos.forEach(dev => testarDispositivo(dev));
+}
+
+// Inicialização automática
+renderizarGrelha();
+// Vare a rede 2 segundos após abrir para dar feedback visual
+setTimeout(testarTodos, 1000);
+</script>
+
+</body>
+    </html>
+    
